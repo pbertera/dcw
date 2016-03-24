@@ -12,14 +12,14 @@ expose some commands to users in order to permit them to easily deploy and manag
 
 The wrapper can be easily configured trough some variables defined in the script:
 
-**dc_confd**: the directory conatining all the docker-compose YAML files
-**command_label_root**: the root label namespace for commands
-**dc_denied_commands**: all the docker-compose commands matching this regex will be denied
-**slack_webook**: the SLACK incoming [webook](https://api.slack.com/incoming-webhooks) for the notification bot if not configured the SLACK notification is disabled
-**slack_channel**: the SLACK notification channel
-**slack_botemoji**: the SLACK bot emoji
-**slack_botname**: the SLACK bot name
-**slack_message_prefix**: the SLACK message prefix
+* **dc_confd**: the directory conatining all the docker-compose YAML files
+* **command_label_root**: the root label namespace for commands
+* **dc_denied_commands**: all the docker-compose commands matching this regex will be denied
+* **slack_webook**: the SLACK incoming [webook](https://api.slack.com/incoming-webhooks) for the notification bot if not configured the SLACK notification is disabled
+* **slack_channel**: the SLACK notification channel
+* **slack_botemoji**: the SLACK bot emoji
+* **slack_botname**: the SLACK bot name
+* **slack_message_prefix**: the SLACK message prefix
 
 ### Pool definition
 
@@ -28,7 +28,7 @@ If you want to expose some commands to exec you have to define a label under the
 
 The following example defines a pool containing a single container (named nginx1) exposing the **shell** command, executing the **shell** command trough the wrapper will execute **docker exec -it nginx1 /bin/bash**
 
-´´´yaml
+```yaml
 version: '2'
 services:
     nginx1:
@@ -38,19 +38,19 @@ services:
         container_name: nginx1
         stdin_open: true
         tty: true
-´´´
+```
 
 ### SSH Usage
 
 The common usage scenario is to use this wrapper as an SSH command wrapper adding the *command* parameter to the **authorized_keys**:
 
-´´´
+```
 command="/opt/bin/dcw",no-port-forwarding,no-agent-forwarding,no-X11-forwarding ssh-rsa AAAAB3NzaC1 [..] == pietro@hank
- ´´´
+ ```
 
 ## Usage
 
-´´´
+```
 Usage:
 
 ./dcw <pool|command> <args>
@@ -72,7 +72,7 @@ Examples:
 ./dcw command ldap1 help
 
     List all the available commands into the container ldap1
-´´´
+```
 
 #### Actions
 
@@ -86,15 +86,15 @@ The *pool* action requires the pool name, pool action is a simple docker-compose
 
 The following command prints the YAML docker-compose configuration file for the *ldap* pool (executes **docker-compose -f ${dc_confd}/<pool>.yaml**):
 
-´´´
+```
 ./dcw pool ldap config
-´´´
+```
 
 The following command starts all the containers of the *ldap* pool:
 
-´´´
+```
 ./dcw pool ldap up -d
-´´´
+```
 
 ##### Command
 
@@ -102,15 +102,15 @@ The *command* action executes a command defined on a container label. The label 
 
 Container *ldap1* label *management.command.shell*
 
-´´´
+```
 $ docker inspect -f '{{ index .Config.Labels "management.command.shell" }}' ldap1
 docker exec -it ldap1 /bin/bash 
-´´´
+```
 
 Executing the *shell* command on the *ldap1* container:
 
-´´´
+```
 ./dcw command ldap1 shell
 INFO: executing command from label *management.command.shell* into container *ldap1*
 root@72b78ab8b5d1:/# 
-´´´
+```
