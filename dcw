@@ -1,0 +1,178 @@
+#!/bin/bash
+
+#####################################################################
+# Docker Compose Configuration
+######################################################################
+# Docker Compose configuration files containing the pool definitions
+dc_confd=./
+# Root label namespace for container commands
+command_label_root=management.command
+# Docker-compose not allowed commands: commands matching the following
+# regex are not allowed
+dc_denied_commands="^kill|^rm"
+
+######################################################################
+# Slack Configuration
+######################################################################
+slack_webook=''
+slack_channel='#devops'
+slack_botemoji=':computer:'
+slack_botname="$USER"
+slack_message_prefix="[$SSH_CLIENT]"
+
+if [ -n "$SSH_ORIGINAL_COMMAND" ]; then
+    set -- $SSH_ORIGINAL_COMMAND
+fi
+
+action=$1; shift
+
+######################################################################
+# Print a message on a slack channel
+######################################################################
+print_slack(){
+    local slack_webook=${slack_webook-''};
+    local slack_channel=${slack_channel-'#devops'};
+    local slack_botname=${slack_botname-'print-slack'};
+    local slack_botemoji=${slack_botemoji-':computer:'}
+    local severity=${1-'INFO'};
+    local icon=':slack:';
+
+    if [ -z "$slack_webook" ];then #No SLACK notification
+        return
+    fi
+
+    case "$severity" in
+        INFO)
+            icon=':page_with_curl:';
+            shift;
+        ;;
+        WARN|WARNING)
+            icon=':warning:';
+            shift;
+        ;;
+        ERROR|ERR)
+            icon=':bangbang:';
+            shift;
+            ;;
+        *)
+            icon=':slack:';
+            ;;
+    esac
+
+    message="${slack_message_prefix} $@"
+
+    payload="payload={\"channel\": \"${slack_channel}\", \"username\": \"${slack_botname}\", \"text\": \"${icon} ${message}\", \"icon_emoji\": \"${slack_botemoji}\"}";
+    curl_result=$(curl -s -S -X POST --data-urlencode "$payload" ${slack_webook});
+}
+
+######################################################################
+# Log a message on stdout and slack
+######################################################################
+log(){
+    echo ${1}: ${@:2}
+    print_slack $@
+}
+
+######################################################################
+# List all the command lables removing the root namespace
+######################################################################
+listcommands(){
+    local container=$1
+    docker inspect -f '{{ json .Config.Labels  }}' "$container" |\
+        python -c "import json, sys; print '\n'.join(list(k for k in json.load(sys.stdin) if k.startswith(\"${command_label_root}\")))" | sed -e "s/${command_label_root}\.//g"
+}
+
+######################################################################
+# Print the usage message
+######################################################################
+usage() {
+    echo "Usage:"
+    cat << EOF
+
+$0 <pool|command> <args>
+
+Examples:
+
+$0 pool ldap ps
+
+    Run the docker-compose ps over the ldap service pool
+
+$0 pool ldap start ldap1
+
+    Start the service ldap1 from the ldap pool
+
+$0 command ldap1 shell
+
+    Execute the command defined into the label 'management.command.shell' of the ldap1 container
+
+$0 command ldap1 help
+
+    List all the available commands into the container ldap1
+
+EOF
+}
+
+if [ -n "$SSH_ORIGINAL_COMMAND" ]; then
+    log INFO "SSH Original command: ${SSH_ORIGINAL_COMMAND}"
+fi
+
+# action = pool, wrap docker-compose
+if [ "$action" == "pool" ]; then
+    pool_name=$1; shift
+
+    # Pool name exists
+    if [ -f "${dc_confd}/${pool_name}.yaml" ]; then
+        if [[ $@ =~ $dc_denied_commands ]]; then
+            log ERROR "Command $@ not allowed"
+            exit -1
+        fi
+        export COMPOSE_PROJECT_NAME=$pool_name
+        log INFO "executing docker-compose $@ on $pool_name"
+        docker-compose -f "${dc_confd}/${pool_name}.yaml" "$@"
+        if [ "$?" != "0" ]; then
+            log ERROR "docker-compose returned an error"
+        fi
+    else
+            echo
+
+        # Pool name not provided
+            if [ -z $pool_name ];then
+            log ERROR "pool name not provided"
+
+            # Pool name not found
+        else
+            log ERROR "invalid pool name: ${pool_name}"
+                echo "ERROR: invalid pool name: $pool_name doesn't exist"
+            fi
+        usage
+        exit -1
+    fi
+elif [ "$action" == "command" ]; then
+    container=$1; shift
+    action=$1; shift
+    
+    if [ "$action" == "help" ]; then
+        echo "Available commands on container $container:"
+        echo
+        listcommands "$container"
+        exit
+    fi
+
+    # extract the label management.command.$action and execute the command
+    label="${command_label_root}.${action}"
+    command=$(docker inspect -f "{{ index .Config.Labels \"$label\" }}" "$container")
+    
+    if [ -z "$command" ]; then
+        log ERROR "command ${action} not found"
+    else
+        log INFO "executing command from label ${label} into container ${container}"
+        eval "$command"
+    fi
+
+elif [ "$action" == "help" ]; then
+    usage
+else
+    log ERROR "Action not defined, you must specify an action (pool or command)"
+    usage
+    exit -1
+fi

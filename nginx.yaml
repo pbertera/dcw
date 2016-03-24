@@ -1,0 +1,44 @@
+version: '2'
+services:
+    nginx1:
+        image: nginx
+        labels:
+            management.command.shell: "docker exec -it nginx1 /bin/bash"
+        container_name: nginx1
+        ports:
+            - "8080:80"
+            - "8081:443"
+        volumes:
+            - /data/nginx1_var-www:/var/www
+            - /data/nginx1_var-www-ssl:/var/www-ssl
+            - /data/nginx1_etc_nginx:/etc/nginx
+        stdin_open: true
+        tty: true
+    nginx2:
+        image: nginx
+        labels:
+            management.command.shell: "docker exec -it nginx2 /bin/bash"
+        container_name: nginx2
+        ports:
+            - "8082:80"
+            - "8083:443"
+        volumes:
+            - /data/nginx2_var-www:/var/www
+            - /data/nginx2_var-www-ssl:/var/www-ssl
+            - /data/nginx2_etc_nginx:/etc/nginx
+        stdin_open: true
+        tty: true
+    nginx3:
+        image: nginx
+        labels:
+            management.command.shell: "docker exec -it nginx3 /bin/bash"
+        container_name: nginx3
+        ports:
+            - "8084:80"
+            - "8085:443"
+        volumes:
+            - /data/nginx3_var-www:/var/www
+            - /data/nginx3_var-www-ssl:/var/www-ssl
+            - /data/nginx3_etc_nginx:/etc/nginx
+        stdin_open: true
+        tty: true
