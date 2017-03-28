@@ -1,5 +1,4 @@
 #!/bin/bash
-
 #####################################################################
 # Docker Compose Configuration
 ######################################################################
@@ -20,6 +19,16 @@ slack_botemoji=':computer:'
 slack_botname="$USER"
 slack_message_prefix="[$SSH_CLIENT]"
 
+######################################################################
+# HipChat Configuration
+######################################################################
+hipchat_webhook=''
+hipchat_message_prefix="[$SSH_CLIENT]"
+
+######################################################################
+# End of configurations
+######################################################################
+
 if [ -n "$SSH_ORIGINAL_COMMAND" ]; then
     set -- $SSH_ORIGINAL_COMMAND
 fi
@@ -27,15 +36,47 @@ fi
 action=$1; shift
 
 ######################################################################
+# Print a message on a HipChat room
+######################################################################
+print_hipchat(){
+    local hipchat_webhook=${hipchat_webhook-''}
+    local severity=${1-'INFO'}
+    local color='gray'
+
+    if [ -z "hipchat_webhook" ];then #No HipChat notification
+        return
+    fi
+
+    case "$severity" in
+        INFO)
+            color='green'
+            shift
+        ;;
+        WARN|WARNING)
+            color='yellow'
+            shift
+        ;;
+        ERR|ERROR)
+            color='red'
+            shift
+        ;;
+    esac
+
+    message="${hipchat_message_prefix} ${severity} $@"
+
+    payload="{\"color\": \"${color}\", \"message\": \"${message}\" }"
+    curl_result=$(curl -s -S -X POST -d "$payload" -H 'Content-Type: application/json' ${hipchat_webhook})
+}
+######################################################################
 # Print a message on a slack channel
 ######################################################################
 print_slack(){
-    local slack_webook=${slack_webook-''};
-    local slack_channel=${slack_channel-'#devops'};
-    local slack_botname=${slack_botname-'print-slack'};
+    local slack_webook=${slack_webook-''}
+    local slack_channel=${slack_channel-'#devops'}
+    local slack_botname=${slack_botname-'print-slack'}
     local slack_botemoji=${slack_botemoji-':computer:'}
-    local severity=${1-'INFO'};
-    local icon=':slack:';
+    local severity=${1-'INFO'}
+    local icon=':slack:'
 
     if [ -z "$slack_webook" ];then #No SLACK notification
         return
@@ -43,26 +84,26 @@ print_slack(){
 
     case "$severity" in
         INFO)
-            icon=':page_with_curl:';
-            shift;
+            icon=':page_with_curl:'
+            shift
         ;;
         WARN|WARNING)
-            icon=':warning:';
-            shift;
+            icon=':warning:'
+            shift
         ;;
         ERROR|ERR)
-            icon=':bangbang:';
-            shift;
+            icon=':bangbang:'
+            shift
             ;;
         *)
-            icon=':slack:';
+            icon=':slack:'
             ;;
     esac
 
     message="${slack_message_prefix} $@"
 
-    payload="payload={\"channel\": \"${slack_channel}\", \"username\": \"${slack_botname}\", \"text\": \"${icon} ${message}\", \"icon_emoji\": \"${slack_botemoji}\"}";
-    curl_result=$(curl -s -S -X POST --data-urlencode "$payload" ${slack_webook});
+    payload="payload={\"channel\": \"${slack_channel}\", \"username\": \"${slack_botname}\", \"text\": \"${icon} ${message}\", \"icon_emoji\": \"${slack_botemoji}\"}"
+    curl_result=$(curl -s -S -X POST --data-urlencode "$payload" ${slack_webook})
 }
 
 ######################################################################
@@ -71,6 +112,7 @@ print_slack(){
 log(){
     echo ${1}: ${@:2}
     print_slack $@
+    print_hipchat $@
 }
 
 ######################################################################

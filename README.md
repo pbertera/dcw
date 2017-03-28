@@ -15,11 +15,13 @@ The wrapper can be easily configured trough some variables defined in the script
 * **dc_confd**: the directory conatining all the docker-compose YAML files
 * **command_label_root**: the root label namespace for commands
 * **dc_denied_commands**: all the docker-compose commands matching this regex will be denied
-* **slack_webook**: the SLACK incoming [webook](https://api.slack.com/incoming-webhooks) for the notification bot if not configured the SLACK notification is disabled
+* **slack_webook**: the SLACK incoming [webook](https://api.slack.com/incoming-webhooks) for the notification bot, if not configured the SLACK notifications are disabled
 * **slack_channel**: the SLACK notification channel
 * **slack_botemoji**: the SLACK bot emoji
 * **slack_botname**: the SLACK bot name
 * **slack_message_prefix**: the SLACK message prefix
+* **hipchat_webhook**: The HipChat incoming [webhook](https://www.hipchat.com/docs/apiv2/method/send_room_notification) for the notification bot, if not configured the HipChat notifications are disabled
+* **hipchat_message_prefix**: the HipChat message prefix
 
 ### Pool definition
 
