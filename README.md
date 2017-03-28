@@ -1,12 +1,14 @@
 # Docker Compose Wrapper
 
-Docker Compose Wrapper is a poor-man PAAS management tool
-This provides a wrapper to the *docker-compose* command and permits to expose commands to the bexecuted on the Docker host.
+Docker Compose Wrapper is a poor-man PAAS management tool.
+This script provides a wrapper to the *docker-compose* command and permits to expose commands that can be executed on the Docker host.
+
+The common use-case for this tool is to be used as an SSH command executed trough the `~/.ssh/authorized_keys` file, see below.
 
 ### SECURITY CONSIDERATIONS
 
 If you are using Docker Compose Wrapper you are trusting your users. This wrapper doesn't provide any security layer: the aim is just to
-expose some commands to users in order to permit them to easily deploy and manage well-defined containers.
+expose some commands to users in order to permit them to easily deploy and manage well-defined containers or actions.
 
 ## Configuration
 
@@ -48,7 +50,7 @@ The common usage scenario is to use this wrapper as an SSH command wrapper addin
 
 ```
 command="/opt/bin/dcw",no-port-forwarding,no-agent-forwarding,no-X11-forwarding ssh-rsa AAAAB3NzaC1 [..] == pietro@hank
- ```
+```
 
 ## Usage
 
