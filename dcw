@@ -13,7 +13,7 @@ dc_denied_commands="^kill|^rm"
 ######################################################################
 # Slack Configuration
 ######################################################################
-slack_webook=''
+slack_webook=
 slack_channel='#devops'
 slack_botemoji=':computer:'
 slack_botname="$USER"
@@ -22,7 +22,7 @@ slack_message_prefix="[$SSH_CLIENT]"
 ######################################################################
 # HipChat Configuration
 ######################################################################
-hipchat_webhook=''
+hipchat_webhook=
 hipchat_message_prefix="[$SSH_CLIENT]"
 
 ######################################################################
@@ -128,29 +128,28 @@ listcommands(){
 # Print the usage message
 ######################################################################
 usage() {
+    local script="ssh user@remote-host"
+    if [ -z "$SSH_CLIENT" ]; then
+        script="$0"
+    fi
     echo "Usage:"
     cat << EOF
 
-$0 <pool|command> <args>
+$script <pool|command> <args>
 
 Examples:
 
-$0 pool ldap ps
+Run the docker-compose ps over the ldap service pool:
+    $script pool ldap ps
 
-    Run the docker-compose ps over the ldap service pool
+Start the service ldap1 from the ldap pool:
+    $script pool ldap start ldap1
 
-$0 pool ldap start ldap1
+Execute the command defined into the label '$command_label_root' of the ldap1 container:
+    $script command ldap1 shell
 
-    Start the service ldap1 from the ldap pool
-
-$0 command ldap1 shell
-
-    Execute the command defined into the label 'management.command.shell' of the ldap1 container
-
-$0 command ldap1 help
-
-    List all the available commands into the container ldap1
-
+List all the available commands into the container ldap1:
+    $script command ldap1 help
 EOF
 }
 
@@ -175,17 +174,15 @@ if [ "$action" == "pool" ]; then
             log ERROR "docker-compose returned an error"
         fi
     else
-            echo
-
+        echo
         # Pool name not provided
-            if [ -z $pool_name ];then
+        if [ -z $pool_name ];then
             log ERROR "pool name not provided"
-
             # Pool name not found
         else
             log ERROR "invalid pool name: ${pool_name}"
-                echo "ERROR: invalid pool name: $pool_name doesn't exist"
-            fi
+            echo "ERROR: invalid pool name: $pool_name doesn't exist"
+        fi
         usage
         exit -1
     fi
@@ -210,7 +207,6 @@ elif [ "$action" == "command" ]; then
         log INFO "executing command from label ${label} into container ${container}"
         eval "$command"
     fi
-
 elif [ "$action" == "help" ]; then
     usage
 else
